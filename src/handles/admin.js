@@ -40,8 +40,8 @@ const generateTeamTable = (matchInfo) => {
   // Разделяем игроков на две команды: team 'a' и team 'b'
 
   const players = matchInfo.players;
-  const teamScoreA = matchInfo?.teamScoreA;
-  const teamScoreB = matchInfo?.teamScoreB;
+  const teamScoreA = matchInfo?.teamScoreA || 0;
+  const teamScoreB = matchInfo?.teamScoreB || 0;
 
   const teamA = players.filter((player) => player.team === "a");
   const teamB = players.filter((player) => player.team === "b");
@@ -52,15 +52,18 @@ const generateTeamTable = (matchInfo) => {
 
   // Формируем итоговый текст в виде таблицы с добавлением пробела после текста
   const table = `
-**${getEmoji(teamScoreA, teamScoreB)} Команда1 - ${
-    isFinished ? teamScoreA : ""
-  } ${matchInfo.manishki === "a" ? "(манишки)" : "(начинают с центра)"}**
+**${getEmoji(teamScoreA, teamScoreB)} Команда 1 ${
+    matchInfo.manishki === "a" ? "(манишки)" : "(начинают с центра)"
+  }**
 ${generatePlayerList(teamA)}
 
-**${getEmoji(teamScoreB, teamScoreA)}  Команда2 - ${
-    isFinished ? teamScoreB : ""
-  } ${matchInfo.manishki === "b" ? "(манишки)" : "(начинают с центра)"}**
-${generatePlayerList(teamB)}`;
+**${getEmoji(teamScoreB, teamScoreA)}  Команда 2 ${
+    matchInfo.manishki === "b" ? "(манишки)" : "(начинают с центра)"
+  }**
+${generatePlayerList(teamB)}
+
+Счет: ${teamScoreA} : ${teamScoreB}
+`;
 
   return table;
 };

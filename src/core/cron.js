@@ -16,7 +16,14 @@ const getRandomTeam = () => {
 };
 
 function dividePlayers(players) {
-  // Сортируем игроков по силе в порядке убывания
+  // Проверяем, что количество игроков чётное
+  if (players.length % 2 !== 0) {
+    throw new Error(
+      "Игроков должно быть четное количество для равного разделения."
+    );
+  }
+
+  // Сортируем игроков по рейтингу в порядке убывания
   players.sort((a, b) => b.rating - a.rating);
 
   // Инициализация команд
@@ -27,7 +34,11 @@ function dividePlayers(players) {
 
   // Распределение игроков
   players.forEach((player) => {
-    if (totalRatingA <= totalRatingB) {
+    // Добавляем игрока в команду с меньшим общим рейтингом
+    if (
+      (teamA.length < players.length / 2 && totalRatingA <= totalRatingB) ||
+      teamB.length === players.length / 2
+    ) {
       teamA.push(player.telegramId);
       totalRatingA += player.rating;
     } else {
@@ -55,7 +66,7 @@ cron.schedule("*/5 * * * * *", async () => {
 
   await bot.telegram.sendMessage(
     CHAT_ID,
-    "Братья до матча остался часик, составы поделены",
+    "Братья, напоминаю, до матча остался часик, составы уже поделены",
     {
       parse_mode: "html",
       reply_to_message_id: messageId,

@@ -29,10 +29,10 @@ function parseMatchDetails(input) {
     return "Некорректные данные";
   }
 
-  // const isCan = playerCount % 2 === 0 && playerCount > 5;
-  // if (!isCan) {
-  //   return "Только четное количество игроков и больше 4";
-  // }
+  const isCan = playerCount % 2 === 0 && playerCount > 5;
+  if (!isCan) {
+    return "Только четное количество игроков и больше 4";
+  }
 
   return {
     date: date,

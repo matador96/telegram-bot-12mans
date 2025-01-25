@@ -66,7 +66,7 @@ module.exports.deletePlayerToMatch = async (obj, matchId) => {
   );
 
   if (!isHaveInMatch) {
-    return "Вы не в матче";
+    return "ты итак не в матче";
   }
 
   data[matchId].players = data[matchId].players.filter(
