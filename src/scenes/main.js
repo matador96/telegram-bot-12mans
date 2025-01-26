@@ -14,8 +14,9 @@ const {
   handleNewMatch,
   handleResultMatch,
   handleDeleteMatch,
-  refreshMatchMessage,
 } = require("./../handles/admin");
+
+const { refreshMatchMessage } = require("./../handles/main");
 
 const { isAdmin } = require("./../consts/admins");
 require("dotenv").config();
@@ -84,15 +85,15 @@ bot.on("callback_query", async (ctx) => {
     if (prefix === "match") {
       const chatId = ctx.update.callback_query.message.chat.id;
       const messageId = ctx.update.callback_query.message.message_id;
-      const userName = ctx.update.callback_query.from.username;
+      const userName = ctx.update.callback_query?.from?.username || "нет ника";
 
       if (action === "join") {
         const result = await addPlayerToMatch(
           {
             telegramId: ctx.update.callback_query.from.id,
-            userName,
-            firstName: ctx.update.callback_query.from?.first_name || "",
-            lastName: ctx.update.callback_query.from?.last_name || "",
+            fullName: `${ctx.update.callback_query.from?.first_name || ""} ${
+              ctx.update.callback_query.from?.last_name || ""
+            }`,
           },
           matchId
         );
@@ -111,7 +112,7 @@ bot.on("callback_query", async (ctx) => {
         }
       } else if (action === "leave") {
         const result = await deletePlayerToMatch(
-          { telegramId: ctx.update.callback_query.from.id, userName },
+          { telegramId: ctx.update.callback_query.from.id },
           matchId
         );
 

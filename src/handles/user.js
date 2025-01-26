@@ -3,10 +3,13 @@ const {
   updateMatch,
   getAllPlayers,
   getCountOfMatches,
+  addMatch,
+  deleteMatchById,
+  getMatchById,
 } = require("./../core/db");
 const { isAdmin } = require("./../consts/admins");
 const messages = require("./../consts/messages");
-const { refreshMatchMessage } = require("./../handles/admin");
+const { refreshMatchMessage, messageForAllGenerate } = require("./main");
 
 const HelpButton = { text: "Помощь", callback_data: "help" };
 const StatsButton = { text: "Статистика игроков", callback_data: "stats" };
@@ -64,9 +67,9 @@ const handleStats = (bot) => async (ctx, obj) => {
   let postText = `🏆 *Рейтинг игроков, всего матчей: ${countOfMatches} *\n\n`;
 
   players.forEach((user, index) => {
-    postText += `${index + 1}. [${user.userName}](tg://user?id=${
+    postText += `${index + 1}. [${user?.fullName}](tg://user?id=${
       user.telegramId
-    }) - ${user.fullName} ${user?.rating || 0} \n`;
+    }) | ${user?.rating || 0} \n`;
   });
 
   postText += `\n🎮 Спасибо всем за участие! 🕹️`;
@@ -111,7 +114,7 @@ const handleCurrentMatch = (bot) => async (ctx, obj) => {
 
   if (!currentMatch?.messageId) {
     const message = await ctx.telegram.sendMessage(chatId, "Текущий матч", {
-      parse_mode: "html",
+      parse_mode: "Markdown",
     });
 
     await updateMatch(currentMatch.id, {
@@ -124,9 +127,8 @@ const handleCurrentMatch = (bot) => async (ctx, obj) => {
       parse_mode: "html",
       reply_to_message_id: currentMatch.messageId,
     });
+    await ctx.answerCbQuery();
   }
-
-  await ctx.answerCbQuery();
 };
 
 module.exports = {

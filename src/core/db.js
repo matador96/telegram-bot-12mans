@@ -21,7 +21,6 @@ const writeFile = async (data, fileName) => {
 module.exports.addPlayerToMatch = async (obj, matchId) => {
   let data = await readFile(matchesFileName);
   let currentMatch = data[matchId];
-  let fullName = `${obj.firstName} ${obj.lastName}`;
 
   if (!currentMatch) {
     return "Матч не найден";
@@ -43,7 +42,7 @@ module.exports.addPlayerToMatch = async (obj, matchId) => {
     return "Матч не активен";
   }
 
-  data[matchId].players.push({ ...obj, fullName });
+  data[matchId].players.push({ ...obj });
 
   await writeFile(data, matchesFileName);
   return "Вы присоединились к матчу";

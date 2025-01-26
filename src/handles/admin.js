@@ -11,88 +11,18 @@ const {
   getMatchById,
   updateMatch,
 } = require("./../core/db");
+const {
+  refreshMatchMessage,
+  messageForAllGenerate,
+  infoMatch,
+  generateTeamTable,
+  generatePlayerList,
+} = require("./main");
 
 const CHAT_ID = process.env.CHANNEL_ID;
 
 const { parseMatchResult } = require("./../helpers/match");
 const { getActiveMatch } = require("./../core/db");
-
-const infoMatch = (matchInfo) => `*📅 Дата:* \`${matchInfo.date}\`  
-⏰ *Начало:* \`${matchInfo.time}\`  
-📍 *Место:* \`${matchInfo.location}\`  
-👥 *Количество игроков:* \`${matchInfo.playerCount} (${
-  matchInfo.playerCount / 2
-}x${matchInfo.playerCount / 2})\`  
-💵 *Цена участия:* \`${matchInfo.cost}\`  
-📝 *Детали:* \`${matchInfo.additionalDetails}\``;
-
-const getEmoji = (a, b) => {
-  if (a > b) {
-    return "✅ Выиграла 🏅 |";
-  } else if (a < b) {
-    return "❌ Проиграла |";
-  } else {
-    return "⚫";
-  }
-};
-
-const generateTeamTable = (matchInfo) => {
-  // Разделяем игроков на две команды: team 'a' и team 'b'
-
-  const players = matchInfo.players;
-  const teamScoreA = matchInfo?.teamScoreA || 0;
-  const teamScoreB = matchInfo?.teamScoreB || 0;
-
-  const teamA = players.filter((player) => player.team === "a");
-  const teamB = players.filter((player) => player.team === "b");
-
-  const isFinished = matchInfo.status === "finished";
-
-  // Заполняем команды данными игроков
-
-  // Формируем итоговый текст в виде таблицы с добавлением пробела после текста
-  const table = `
-**${getEmoji(teamScoreA, teamScoreB)} Команда 1 ${
-    matchInfo.manishki === "a" ? "(манишки)" : "(начинают с центра)"
-  }**
-${generatePlayerList(teamA)}
-
-**${getEmoji(teamScoreB, teamScoreA)}  Команда 2 ${
-    matchInfo.manishki === "b" ? "(манишки)" : "(начинают с центра)"
-  }**
-${generatePlayerList(teamB)}
-
-Счет: ${teamScoreA} : ${teamScoreB}
-`;
-
-  return table;
-};
-
-const messageForAllGenerate = (matchInfo) => {
-  const text =
-    matchInfo.players.length !== matchInfo.playerCount
-      ? "⏳ _Когда соберутся все игроки, и до матча останется час, бот отправит сообщение с балансными составами._ "
-      : "👍 _Все игроки собраны, за час до игры будут опубликованы составы._";
-  return {
-    text: `
-⚽️ *Матч ${matchInfo.status === "active" ? "активен" : "завершен"}* *ID:* \`${
-      matchInfo.id
-    }\`
-
-${infoMatch(matchInfo)}
-
-👤 *Список игроков ${matchInfo?.players?.length}/${matchInfo.playerCount}: *  
-${
-  matchInfo?.players?.length > 0
-    ? generatePlayerList(matchInfo?.players || [])
-    : "🚫 Пусто"
-}
-
-${text}  
-`,
-    parse_mode: "Markdown",
-  };
-};
 
 const pendingMessageForAllGenerate = (matchInfo) => {
   const text =
@@ -139,58 +69,6 @@ const refreshMessagePending = async (bot, matchId) => {
     .catch((e) => {
       console.log(e);
     });
-};
-
-const refreshMatchMessage = async (bot, matchId) => {
-  const matchInfo = await getMatchById(matchId);
-
-  if (!matchInfo) {
-    return;
-  }
-  const messageForAll = messageForAllGenerate(matchInfo);
-
-  let keyboardActions = [];
-
-  if (matchInfo.status === "active") {
-    keyboardActions = [
-      [
-        {
-          text: "Залететь на матч",
-          callback_data: `match:join:${matchInfo.id}`,
-        },
-      ],
-      [
-        {
-          text: "Ливнуть с матча",
-          callback_data: `match:leave:${matchInfo.id}`,
-        },
-      ],
-    ];
-  }
-
-  await bot.telegram.editMessageText(
-    CHAT_ID,
-    matchInfo.messageId,
-    null,
-    messageForAll,
-    {
-      reply_markup: {
-        inline_keyboard: keyboardActions,
-      },
-      parse_mode: "Markdown",
-    }
-  );
-};
-
-const generatePlayerList = (players) => {
-  return players
-    .map(
-      (player, index) =>
-        `${index + 1}. [${player.userName}](tg://user?id=${
-          player.telegramId
-        }) - ${player.fullName}`
-    )
-    .join("\n");
 };
 
 const handleNewMatch = (bot) => async (ctx, obj) => {
@@ -393,8 +271,6 @@ const handleDeleteMatch = (bot) => async (ctx, obj) => {
 module.exports = {
   handleNewMatch,
   handleDeleteMatch,
-  refreshMatchMessage,
   handleResultMatch,
   refreshMessagePending,
-  generatePlayerList,
 };

@@ -18,13 +18,12 @@ function normalizeUserListWithRating(data) {
   const userInfo = {};
 
   players.forEach((player) => {
-    const { telegramId, userName, fullName, team } = player;
+    const { telegramId, fullName, team } = player;
 
     // Если пользователь уже существует, пропускаем добавление
     if (!userInfo[telegramId]) {
       userInfo[telegramId] = {
         telegramId,
-        userName,
         fullName,
         rating: 0, // Изначально рейтинг 0
       };
