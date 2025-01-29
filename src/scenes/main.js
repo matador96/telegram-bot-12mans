@@ -1,5 +1,4 @@
 const { Telegraf } = require("telegraf");
-const { Markup } = require("telegraf");
 const fetch = require("node-fetch");
 const { addPlayerToMatch, deletePlayerToMatch } = require("./../core/db");
 const messages = require("./../consts/messages");
@@ -7,7 +6,6 @@ const {
   handleHelp,
   handleStats,
   handleStart,
-  isPrivate,
   handleCurrentMatch,
 } = require("./../handles/user");
 const {
@@ -16,19 +14,54 @@ const {
   handleDeleteMatch,
 } = require("./../handles/admin");
 
-const { refreshMatchMessage } = require("./../handles/main");
+const { createMatchMessage } = require("./../handles/main");
+
+const { closeCtx } = require("./../helpers/main");
 
 const { isAdmin } = require("./../consts/admins");
 require("dotenv").config();
-const AdminCreateButtonButton = {
-  text: "Создать новый матч",
-  callback_data: "admincreatematchmessage",
-};
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-bot.command("start", async (ctx) => {
-  await handleStart(bot)(ctx, ctx);
+async function processHandle(ctx, type, handle) {
+  await handle(bot)(
+    ctx,
+    type === "action" ? ctx.update.callback_query : ctx.update.message,
+    type === "action"
+      ? ctx.update.callback_query.from
+      : ctx.update.message.from,
+    ctx.chat.id,
+    type
+  );
+  if (type === "action") await closeCtx(ctx);
+}
+
+const actionsWithCommands = [
+  {
+    command: "help",
+    action: handleHelp,
+  },
+  {
+    command: "current",
+    action: handleCurrentMatch,
+  },
+  {
+    command: "start",
+    action: handleStart,
+  },
+  {
+    command: "stats",
+    action: handleStats,
+  },
+];
+
+actionsWithCommands.forEach((e) => {
+  bot.action(e.command, async (ctx) => {
+    await processHandle(ctx, "action", e.action);
+  });
+  bot.command(e.command, async (ctx) => {
+    await processHandle(ctx, "text", e.action);
+  });
 });
 
 bot.command("create", async (ctx) => {
@@ -44,39 +77,12 @@ bot.command("delete", async (ctx) => {
 });
 
 bot.action("leave", async (ctx) => {
-  await ctx.answerCbQuery();
-});
-
-bot.action("stats", async (ctx) => {
-  await ctx.answerCbQuery();
-  await handleStats(bot)(ctx, ctx.update.callback_query);
-});
-
-bot.command("stats", async (ctx) => {
-  await handleStats(bot)(ctx, ctx);
-});
-
-bot.action("help", async (ctx) => {
-  await ctx.answerCbQuery();
-  await handleHelp(bot)(ctx, ctx.update.callback_query);
-});
-
-bot.command("help", async (ctx) => {
-  await handleHelp(bot)(ctx, ctx);
-});
-
-bot.action("current", async (ctx) => {
-  await ctx.answerCbQuery();
-  await handleCurrentMatch(bot)(ctx, ctx.update.callback_query);
-});
-
-bot.command("current", async (ctx) => {
-  await handleCurrentMatch(bot)(ctx, ctx);
+  await closeCtx(ctx);
 });
 
 bot.on("callback_query", async (ctx) => {
   const callbackData = ctx.update.callback_query.data; // Получаем данные callback
-  let isUpdated = false;
+  let result = "";
 
   if (callbackData.includes(":")) {
     const [prefix, action, matchId] = callbackData.split(":"); // Разделяем строку
@@ -88,7 +94,7 @@ bot.on("callback_query", async (ctx) => {
       const userName = ctx.update.callback_query?.from?.username || "нет ника";
 
       if (action === "join") {
-        const result = await addPlayerToMatch(
+        result = await addPlayerToMatch(
           {
             telegramId: ctx.update.callback_query.from.id,
             fullName: `${ctx.update.callback_query.from?.first_name || ""} ${
@@ -97,45 +103,22 @@ bot.on("callback_query", async (ctx) => {
           },
           matchId
         );
-
-        if (result === "Вы присоединились к матчу") {
-          isUpdated = true;
-        } else {
-          await bot.telegram.sendMessage(
-            chatId,
-            `@${userName} ${result} с ID: ${matchId}`,
-            {
-              parse_mode: "html",
-              reply_to_message_id: messageId,
-            }
-          );
-        }
       } else if (action === "leave") {
-        const result = await deletePlayerToMatch(
+        result = await deletePlayerToMatch(
           { telegramId: ctx.update.callback_query.from.id },
           matchId
         );
-
-        if (result === "Вы покинули матч") {
-          isUpdated = true;
-        } else {
-          await bot.telegram.sendMessage(
-            chatId,
-            `@${userName} ${result} ID: ${matchId}`,
-            {
-              parse_mode: "html",
-              reply_to_message_id: messageId,
-            }
-          );
-        }
       }
 
-      if (isUpdated) {
-        await refreshMatchMessage(bot, matchId);
+      if (["Вы покинули матч", "Вы присоединились к матчу"].includes(result)) {
+        await createMatchMessage(ctx, matchId, null, {
+          fromObj: ctx.update.callback_query.from,
+          action,
+        });
       }
-      await ctx.answerCbQuery();
     }
   }
+  await closeCtx(ctx, result, false);
 });
 
 bot.on("text", (ctx) => {
@@ -174,7 +157,7 @@ bot.request("setMyName", {
 });
 
 bot.request("setMyDescription", {
-  description: messages.bot.description,
+  description: messages.welcomeTelegramBot,
 });
 
 bot.request("setMyShortDescription", {
@@ -216,6 +199,11 @@ bot.on("new_chat_members", (ctx) => {
     const userName = member?.first_name || "новый участник";
     ctx.reply(`Добро пожаловать в группу, ${userName}!`);
   });
+});
+
+bot.catch((err, ctx) => {
+  console.error(`Error for ${ctx.updateType}`, err);
+  // Дополнительно можно уведомлять администратора о сбоях
 });
 
 module.exports = (app) => {

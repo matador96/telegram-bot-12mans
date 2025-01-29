@@ -6,8 +6,7 @@ const {
 } = require("./db");
 const { isWithinOneHour } = require("../helpers/time");
 const { bot } = require("./bot");
-const { refreshMessagePending } = require("../handles/admin");
-const CHAT_ID = process.env.CHANNEL_ID;
+const { createMatchPendingMessage } = require("../handles/main");
 
 const getRandomTeam = () => {
   // Сгенерировать случайное число: 0 или 1
@@ -60,18 +59,6 @@ cron.schedule("*/5 * * * * *", async () => {
   if (!isWithinOneHour(activeMatch.date, activeMatch.time)) return;
 
   const matchId = activeMatch.id;
-  const messageId = activeMatch?.messageId;
-
-  if (!messageId) return;
-
-  await bot.telegram.sendMessage(
-    CHAT_ID,
-    "Братья, напоминаю, до матча остался часик, составы уже поделены",
-    {
-      parse_mode: "html",
-      reply_to_message_id: messageId,
-    }
-  );
 
   const manishki = getRandomTeam();
 
@@ -95,5 +82,5 @@ cron.schedule("*/5 * * * * *", async () => {
   };
 
   await updateMatch(matchId, updatedMatch);
-  await refreshMessagePending(bot, matchId);
+  await createMatchPendingMessage(bot, matchId);
 });

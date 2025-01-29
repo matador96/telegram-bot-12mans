@@ -12,64 +12,16 @@ const {
   updateMatch,
 } = require("./../core/db");
 const {
-  refreshMatchMessage,
   messageForAllGenerate,
   infoMatch,
   generateTeamTable,
-  generatePlayerList,
 } = require("./main");
 
 const CHAT_ID = process.env.CHANNEL_ID;
+const { createMatchPendingMessage } = require("./main");
 
 const { parseMatchResult } = require("./../helpers/match");
 const { getActiveMatch } = require("./../core/db");
-
-const pendingMessageForAllGenerate = (matchInfo) => {
-  const text =
-    matchInfo.status === "pending"
-      ? "👍 _Не меняйте составы! Админы после игры не забудьте внести результаты._"
-      : "Матч окончен";
-
-  return {
-    text: `
-⚽️ *Матч ${matchInfo.status === "pending" ? "играется" : "завершен"}* *ID:* \`${
-      matchInfo.id
-    }\`
-
-${infoMatch(matchInfo)}
-
-${generateTeamTable(matchInfo)}
-
-${text}`,
-
-    parse_mode: "Markdown",
-  };
-};
-
-const refreshMessagePending = async (bot, matchId) => {
-  const matchInfo = await getMatchById(matchId);
-
-  if (!matchInfo) {
-    return;
-  }
-
-  // if (matchInfo.status !== "pending") {
-  //   return;
-  // }
-
-  const messageForAll = pendingMessageForAllGenerate(matchInfo);
-
-  await bot.telegram
-    .editMessageText(CHAT_ID, matchInfo.messageId, null, messageForAll, {
-      reply_markup: {
-        inline_keyboard: [],
-      },
-      parse_mode: "Markdown",
-    })
-    .catch((e) => {
-      console.log(e);
-    });
-};
 
 const handleNewMatch = (bot) => async (ctx, obj) => {
   if (!isAdmin(obj.message.from.id)) {
@@ -120,16 +72,17 @@ const handleNewMatch = (bot) => async (ctx, obj) => {
         inline_keyboard: [
           [
             {
-              text: "Залететь на матч",
+              text: "✅️ Записаться на матч",
               callback_data: `match:join:${generatedUuid}`,
             },
           ],
           [
             {
-              text: "Ливнуть с матча",
+              text: "❌ Выйти из матча",
               callback_data: `match:leave:${generatedUuid}`,
             },
           ],
+          [{ text: "MENU ☰", callback_data: "start" }],
         ],
       },
       parse_mode: "Markdown",
@@ -140,7 +93,6 @@ const handleNewMatch = (bot) => async (ctx, obj) => {
     ...matchInfo,
     id: generatedUuid,
     status: "active",
-    messageId: messageInGroup.message_id,
   };
 
   await bot.telegram.pinChatMessage(CHAT_ID, messageInGroup.message_id);
@@ -161,7 +113,6 @@ const handleResultMatch = (bot) => async (ctx, obj) => {
   if (typeof parsedMatchResult === "string") {
     await bot.telegram.sendMessage(chatId, parsedMatchResult, {
       parse_mode: "html",
-
       reply_to_message_id: messageId,
     });
     return;
@@ -177,20 +128,20 @@ const handleResultMatch = (bot) => async (ctx, obj) => {
     return;
   }
 
-  if (matchInfo?.status !== "pending") {
-    await bot.telegram.sendMessage(
-      chatId,
-      "Матч еще не начался даже броу(, жди, за час будет доступно выставление результатов",
-      {
-        parse_mode: "html",
-      }
-    );
-    return;
-  }
+  // if (matchInfo?.status !== "pending") {
+  //   await bot.telegram.sendMessage(
+  //     chatId,
+  //     "Матч еще не начался даже броу(, жди, за час будет доступно выставление результатов",
+  //     {
+  //       parse_mode: "html",
+  //     }
+  //   );
+  //   return;
+  // }
 
   await bot.telegram.sendMessage(
     chatId,
-    `Результат для матча ID: ${matchId} обновлен`,
+    `Результат для последнего матча обновлен`,
     {
       parse_mode: "html",
       reply_to_message_id: messageId,
@@ -202,7 +153,8 @@ const handleResultMatch = (bot) => async (ctx, obj) => {
     teamScoreA: parsedMatchResult.teamScoreA,
     teamScoreB: parsedMatchResult.teamScoreB,
   });
-  await refreshMessagePending(ctx, matchId);
+
+  await createMatchPendingMessage(ctx, matchId);
 
   const whosWin =
     parsedMatchResult.teamScoreA !== parsedMatchResult.teamScoreB
@@ -272,5 +224,4 @@ module.exports = {
   handleNewMatch,
   handleDeleteMatch,
   handleResultMatch,
-  refreshMessagePending,
 };

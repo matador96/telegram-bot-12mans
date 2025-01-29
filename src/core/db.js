@@ -1,7 +1,6 @@
 const fs = require("fs");
-const messages = require("./../consts/messages");
 const { normalizeUserListWithRating } = require("./../helpers/rating");
-// const usersFileName = `users.json`;
+
 const matchesFileName = `matches.json`;
 
 const readFile = async (fileName) => {
@@ -26,10 +25,6 @@ module.exports.addPlayerToMatch = async (obj, matchId) => {
     return "Матч не найден";
   }
 
-  if (data[matchId].players.length >= data[matchId].playerCount) {
-    return "Матч заполнен";
-  }
-
   const isHaveInMatch = data[matchId].players.find(
     (e) => e.telegramId === obj.telegramId
   );
@@ -38,8 +33,16 @@ module.exports.addPlayerToMatch = async (obj, matchId) => {
     return "Вы уже в матче";
   }
 
-  if (data[matchId].status !== "active") {
-    return "Матч не активен";
+  if (data[matchId].players.length >= data[matchId].playerCount) {
+    return "Мест нет";
+  }
+
+  if (data[matchId].status === "pending") {
+    return "Матч уже идет";
+  }
+
+  if (data[matchId].status === "finished") {
+    return "Матч завершился";
   }
 
   data[matchId].players.push({ ...obj });
@@ -56,8 +59,12 @@ module.exports.deletePlayerToMatch = async (obj, matchId) => {
     return "Матч не найден";
   }
 
-  if (data[matchId].status !== "active") {
-    return "Матч не активен";
+  if (data[matchId].status === "pending") {
+    return "Матч уже идет";
+  }
+
+  if (data[matchId].status === "finished") {
+    return "Матч завершился";
   }
 
   const isHaveInMatch = data[matchId].players.find(
@@ -65,7 +72,7 @@ module.exports.deletePlayerToMatch = async (obj, matchId) => {
   );
 
   if (!isHaveInMatch) {
-    return "ты итак не в матче";
+    return "Вы не в матче итак";
   }
 
   data[matchId].players = data[matchId].players.filter(
@@ -75,14 +82,6 @@ module.exports.deletePlayerToMatch = async (obj, matchId) => {
   await writeFile(data, matchesFileName);
   return "Вы покинули матч";
 };
-
-// module.exports.getUserByTelegramId = async (userTelegramId) => {
-//   const data = await readFile(usersFileName);
-
-//   const user = Object.values(data).find((e) => e.telegramId === userTelegramId);
-
-//   return user;
-// };
 
 module.exports.getCountOfMatches = async () => {
   const data = await readFile(matchesFileName);
@@ -140,18 +139,6 @@ module.exports.deleteMatchById = async (matchId) => {
   }
 };
 
-// module.exports.getAllUsers = async () => {
-//   const data = await readFile(usersFileName);
-
-//   return Object.values(data);
-// };
-
-// module.exports.getSortedWithWinsPlayers = async () => {
-//   const data = await readFile(usersFileName);
-
-//   return Object.values(data);
-// };
-
 module.exports.getActiveMatch = async (obj) => {
   let data = await readFile(matchesFileName);
 
@@ -198,18 +185,7 @@ module.exports.addMatch = async (obj) => {
   await writeFile(data, matchesFileName);
 };
 
-// module.exports.addUser = async (obj) => {
-//   let data = await readFile(usersFileName);
-
-//   data[obj.telegramId] = { ...obj };
-//   await writeFile(data, usersFileName);
-// };
-
 module.exports.initializeDB = async () => {
-  // if (!fs.existsSync(usersFileName)) {
-  //   await writeFile({}, usersFileName);
-  // }
-
   if (!fs.existsSync(matchesFileName)) {
     await writeFile({}, matchesFileName);
   }

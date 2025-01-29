@@ -1,39 +1,36 @@
 function normalizeUserListWithRating(data) {
-  if (Object.values(data).length === 0) {
+  if (Object.keys(data).length === 0) {
     return [];
   }
 
-  const game = Object.values(data)[0]; // Предполагаем, что структура содержит только один объект игры
-  const players = game.players;
-  const teamScoreA = game.teamScoreA;
-  const teamScoreB = game.teamScoreB;
-
-  // Определяем рейтинг команды
-  const teamRatings = {
-    a: teamScoreA > teamScoreB ? 3 : teamScoreA < teamScoreB ? 0 : 1,
-    b: teamScoreB > teamScoreA ? 3 : teamScoreB < teamScoreA ? 0 : 1,
-  };
-
-  // Создаём объект для хранения информации о пользователях
   const userInfo = {};
 
-  players.forEach((player) => {
-    const { telegramId, fullName, team } = player;
+  Object.values(data).forEach((game) => {
+    const { players, teamScoreA, teamScoreB } = game;
 
-    // Если пользователь уже существует, пропускаем добавление
-    if (!userInfo[telegramId]) {
-      userInfo[telegramId] = {
-        telegramId,
-        fullName,
-        rating: 0, // Изначально рейтинг 0
-      };
-    }
+    // Определяем рейтинг команды
+    const teamRatings = {
+      a: teamScoreA > teamScoreB ? 3 : teamScoreA < teamScoreB ? 0 : 1,
+      b: teamScoreB > teamScoreA ? 3 : teamScoreB < teamScoreA ? 0 : 1,
+    };
 
-    // Добавляем рейтинг игроку в зависимости от команды
-    userInfo[telegramId].rating += teamRatings[team];
+    players.forEach((player) => {
+      const { telegramId, fullName, team } = player;
+
+      if (!userInfo[telegramId]) {
+        userInfo[telegramId] = {
+          telegramId,
+          fullName,
+          rating: 0,
+        };
+      }
+
+      // Суммируем рейтинг игрока за все игры
+      userInfo[telegramId].rating += teamRatings[team];
+    });
   });
 
-  // Возвращаем список пользователей без дублей
+  // Возвращаем отсортированный список пользователей
   return Object.values(userInfo).sort((a, b) => b.rating - a.rating);
 }
 
