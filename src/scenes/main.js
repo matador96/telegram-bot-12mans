@@ -13,6 +13,9 @@ const {
   handleNewMatch,
   handleResultMatch,
   handleDeleteMatch,
+  handleChangeDateMatch,
+  handleChangeCostMatch,
+  handleChangeMansMatch,
 } = require("./../handles/admin");
 
 const { createMatchMessage } = require("./../handles/main");
@@ -79,6 +82,18 @@ bot.command("result", async (ctx) => {
 
 bot.command("delete", async (ctx) => {
   await handleDeleteMatch(bot)(ctx, ctx);
+});
+
+bot.command("date", async (ctx) => {
+  await handleChangeDateMatch(bot)(ctx, ctx);
+});
+
+bot.command("cost", async (ctx) => {
+  await handleChangeCostMatch(bot)(ctx, ctx);
+});
+
+bot.command("mans", async (ctx) => {
+  await handleChangeMansMatch(bot)(ctx, ctx);
 });
 
 bot.action("leave", async (ctx) => {
@@ -167,29 +182,6 @@ bot.request("setMyDescription", {
 
 bot.request("setMyShortDescription", {
   short_description: messages.bot.shortDescription,
-});
-
-bot.request("setMyCommands", {
-  commands: [
-    {
-      command: "create",
-      description: "Создать матч",
-    },
-    {
-      command: "delete",
-      description: "Удалить матч",
-    },
-    {
-      command: "result",
-      description: "Подтвердить результаты",
-    },
-    {
-      command: "help",
-      description: "Помощь",
-    },
-  ],
-  scope: { type: "all_private_chats" },
-  language_code: "en",
 });
 
 bot

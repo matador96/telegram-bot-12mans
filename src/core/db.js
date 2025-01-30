@@ -141,13 +141,19 @@ module.exports.getActiveMatch = async (id) => {
 
 module.exports.deleteMatchById = async (matchId) => {
   const data = await readFile(matchesFileName);
-  const user = Object.values(data).find((e) => e.id === matchId);
 
   if (data[matchId]) {
     delete data[matchId];
 
     await writeFile({ ...data }, matchesFileName);
   }
+};
+
+module.exports.updateMatch = async (matchId, obj) => {
+  const data = await readFile(matchesFileName);
+  data[matchId] = { ...data[matchId], ...obj };
+
+  await writeFile({ ...data }, matchesFileName);
 };
 
 module.exports.getActiveMatch = async (obj) => {

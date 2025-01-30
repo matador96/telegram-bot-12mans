@@ -58,6 +58,9 @@ const handleHelp = (bot) => async (ctx, obj, fromObj, chatId) => {
 
   await bot.telegram.sendMessage(chatId, text, {
     parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: [[{ text: "MENU ☰", callback_data: "start" }]],
+    },
   });
 };
 
@@ -71,10 +74,30 @@ const handleStats = (bot) => async (ctx, obj, fromObj, chatId) => {
   const countOfMatches = await getCountOfFinishedMatches();
   const players = await getAllPlayers();
 
-  let postText = `🏆 *Рейтинг игроков, всего матчей: ${countOfMatches} *\n\n`;
+  let postText = `🏆 *Рейтинг игроков, всего матчей: ${countOfMatches} *\n
+    Игрок | Очков / Побед
+    ------------------------------------\n`;
 
   players.forEach((user, index) => {
-    postText += `${index + 1}. ${user?.fullName} | ${user?.rating || 0} \n`;
+    if (user?.rating > 0) {
+      let emoji = "";
+
+      if (index === 0) {
+        emoji = "🥇";
+      }
+
+      if (index === 1) {
+        emoji = "🥈";
+      }
+
+      if (index === 2) {
+        emoji = "🥉";
+      }
+
+      postText += `${index + 1}. ${emoji} ${user?.fullName} ( ${
+        user?.rating || 0
+      } / ${user.winCount || 0} ) \n`;
+    }
   });
 
   postText += `\n🎮 Статистику запросил: [${
@@ -83,6 +106,9 @@ const handleStats = (bot) => async (ctx, obj, fromObj, chatId) => {
 
   await bot.telegram.sendMessage(chatId, postText, {
     parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: [[{ text: "MENU ☰", callback_data: "start" }]],
+    },
   });
 };
 
@@ -91,13 +117,17 @@ const handleStart = (bot) => async (ctx, obj, fromObj, chatId) => {
     return;
   }
 
+  const userInfo = fromObj;
+
   await bot.telegram.sendMessage(
     chatId,
-    `${messages.welcomeTelegramBot} 
-
-ID канала ${chatId}`,
+    `${messages.welcomeTelegramBot} ID канала ${chatId}
+\n🎮 Меню запросил: [${
+      userInfo?.first_name || userInfo?.last_name || userInfo?.id
+    }](tg://user?id=${userInfo.id}) 🕹️
+`,
     {
-      parse_mode: "html",
+      parse_mode: "markdown",
       reply_markup: {
         inline_keyboard: [
           [CurrentMatchButton],

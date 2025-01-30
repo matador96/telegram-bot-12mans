@@ -93,8 +93,71 @@ function parseMatchResult(command) {
   };
 }
 
+function parseMatchDate(command) {
+  // Регулярное выражение для проверки и разбора команды
+  const regex = /^\/date\s+(\d+)\s+(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2})$/;
+  const match = command.match(regex);
+
+  if (!match) {
+    return "Неверный формат команды. Используйте: /date ID_матча ДД.ММ.ГГГГ ЧЧ:ММ";
+  }
+
+  // Извлечение данных
+  const matchId = match[1]; // ID матча
+  const date = match[2]; // Дата матча
+  const time = match[3]; // Время матча
+
+  // Возвращаем объект с результатами
+  return {
+    date,
+    time,
+    matchId,
+  };
+}
+
+function parseMatchCost(command) {
+  // Регулярное выражение для разбора команды /cost
+  const regex = /^\/cost\s+(\d+)\s+(.+)$/;
+  const match = command.match(regex);
+
+  if (!match) {
+    return "Неверный формат команды. Используйте: /cost ID_матча Любой_Текст";
+  }
+
+  // Извлечение данных
+  const matchId = match[1];
+  const cost = match[2];
+
+  return {
+    matchId,
+    cost,
+  };
+}
+
+function parseMatchMans(command) {
+  // Регулярное выражение для разбора команды /mans
+  const regex = /^\/mans\s+(\d+)\s+(\d+)$/;
+  const match = command.match(regex);
+
+  if (!match) {
+    return "Неверный формат команды. Используйте: /mans ID_матча Число";
+  }
+
+  // Извлечение данных
+  const matchId = match[1];
+  const mans = match[2];
+
+  return {
+    matchId,
+    mans,
+  };
+}
+
 module.exports = {
   parseMatchDetails,
+  parseMatchDate,
+  parseMatchCost,
   parseDeleteMatchDetails,
   parseMatchResult,
+  parseMatchMans,
 };

@@ -20,7 +20,15 @@ const {
 const CHAT_ID = process.env.CHANNEL_ID;
 const { createMatchPendingMessage } = require("./main");
 
-const { parseMatchResult } = require("./../helpers/match");
+const {
+  parseMatchResult,
+  parseMatchDate,
+  parseMatchCost,
+  parseMatchMans,
+} = require("./../helpers/match");
+
+const { createMatchMessage } = require("./main");
+
 const { getActiveMatch } = require("./../core/db");
 
 const handleNewMatch = (bot) => async (ctx, obj) => {
@@ -220,8 +228,212 @@ const handleDeleteMatch = (bot) => async (ctx, obj) => {
   const messageId = obj.message.message_id;
 };
 
+const handleChangeDateMatch = (bot) => async (ctx, obj) => {
+  if (!isAdmin(obj.message.from.id)) {
+    return isPrivate(bot, ctx, obj);
+  }
+
+  const chatId = ctx.chat.id;
+  const parsedMatchObj = parseMatchDate(obj.message.text);
+
+  if (typeof parsedMatchObj === "string") {
+    await bot.telegram.sendMessage(chatId, parsedMatchObj, {
+      parse_mode: "html",
+    });
+    return;
+  }
+
+  const matchInfo = await getMatchById(parsedMatchObj.matchId);
+
+  if (!matchInfo) {
+    await bot.telegram.sendMessage(chatId, "Матча с таким ID не существует", {
+      parse_mode: "html",
+    });
+    return;
+  }
+
+  if (matchInfo.status !== "active") {
+    await bot.telegram.sendMessage(
+      chatId,
+      "Матч уже стартанул или завершился, нельзя изменить",
+      {
+        parse_mode: "html",
+      }
+    );
+    return;
+  }
+
+  await updateMatch(parsedMatchObj.matchId, {
+    date: parsedMatchObj.date,
+    time: parsedMatchObj.time,
+  });
+
+  await bot.telegram.sendMessage(
+    CHAT_ID,
+    `В матче изменено время на ${
+      parsedMatchObj.date + " " + parsedMatchObj.time
+    }`,
+    {
+      parse_mode: "html",
+    }
+  );
+
+  await createMatchMessage(ctx, parsedMatchObj.matchId);
+
+  await bot.telegram.sendMessage(
+    chatId,
+    `Матч ID: ${parsedMatchObj.matchId} обновлен`,
+    {
+      parse_mode: "html",
+    }
+  );
+};
+
+const handleChangeCostMatch = (bot) => async (ctx, obj) => {
+  if (!isAdmin(obj.message.from.id)) {
+    return isPrivate(bot, ctx, obj);
+  }
+
+  const chatId = ctx.chat.id;
+  const parsedMatchObj = parseMatchCost(obj.message.text);
+
+  if (typeof parsedMatchObj === "string") {
+    await bot.telegram.sendMessage(chatId, parsedMatchObj, {
+      parse_mode: "html",
+    });
+    return;
+  }
+
+  const matchInfo = await getMatchById(parsedMatchObj.matchId);
+
+  if (!matchInfo) {
+    await bot.telegram.sendMessage(chatId, "Матча с таким ID не существует", {
+      parse_mode: "html",
+    });
+    return;
+  }
+
+  if (matchInfo.status !== "active") {
+    await bot.telegram.sendMessage(
+      chatId,
+      "Матч уже стартанул или завершился, нельзя изменить",
+      {
+        parse_mode: "html",
+      }
+    );
+    return;
+  }
+
+  await updateMatch(parsedMatchObj.matchId, {
+    cost: parsedMatchObj.cost,
+  });
+
+  await bot.telegram.sendMessage(
+    CHAT_ID,
+    `В матче изменена цена участия на ${parsedMatchObj.cost}`,
+    {
+      parse_mode: "html",
+    }
+  );
+
+  await createMatchMessage(ctx, parsedMatchObj.matchId);
+
+  await bot.telegram.sendMessage(
+    chatId,
+    `Матч ID: ${parsedMatchObj.matchId} обновлен`,
+    {
+      parse_mode: "html",
+    }
+  );
+};
+
+const handleChangeMansMatch = (bot) => async (ctx, obj) => {
+  if (!isAdmin(obj.message.from.id)) {
+    return isPrivate(bot, ctx, obj);
+  }
+
+  const chatId = ctx.chat.id;
+  let parsedMatchObj = parseMatchMans(obj.message.text);
+
+  if (typeof parsedMatchObj === "string") {
+    await bot.telegram.sendMessage(chatId, parsedMatchObj, {
+      parse_mode: "html",
+    });
+    return;
+  }
+
+  const matchInfo = await getMatchById(parsedMatchObj.matchId);
+
+  if (!matchInfo) {
+    await bot.telegram.sendMessage(chatId, "Матча с таким ID не существует", {
+      parse_mode: "html",
+    });
+    return;
+  }
+
+  if (matchInfo.status !== "active") {
+    await bot.telegram.sendMessage(
+      chatId,
+      "Матч уже стартанул или завершился, нельзя изменить",
+      {
+        parse_mode: "html",
+      }
+    );
+    return;
+  }
+
+  parsedMatchObj = { ...parsedMatchObj, mans: parseInt(parsedMatchObj.mans) };
+
+  if (matchInfo.playerCount === parsedMatchObj.mans) {
+    await bot.telegram.sendMessage(
+      chatId,
+      "Количество участников в лобби и так равно тому, что вы хотите установить",
+      {
+        parse_mode: "html",
+      }
+    );
+    return;
+  }
+
+  if (matchInfo.players.length > parsedMatchObj.mans) {
+    await bot.telegram.sendMessage(
+      chatId,
+      "Игроков в лобби больше чем вы хотите уменьшить, попросите их выйти из матча, и попыптайтесь повторить команду",
+      {
+        parse_mode: "html",
+      }
+    );
+    return;
+  }
+
+  await updateMatch(parsedMatchObj.matchId, {
+    playerCount: parsedMatchObj.mans,
+  });
+
+  await bot.telegram.sendMessage(
+    CHAT_ID,
+    `В матче изменено количество игроков на ${parsedMatchObj.mans}`,
+    {
+      parse_mode: "html",
+    }
+  );
+
+  await createMatchMessage(ctx, parsedMatchObj.matchId);
+
+  await bot.telegram.sendMessage(
+    chatId,
+    `Матч ID: ${parsedMatchObj.matchId} обновлен`,
+    {
+      parse_mode: "html",
+    }
+  );
+};
+
 module.exports = {
   handleNewMatch,
   handleDeleteMatch,
+  handleChangeDateMatch,
+  handleChangeCostMatch,
   handleResultMatch,
+  handleChangeMansMatch,
 };
