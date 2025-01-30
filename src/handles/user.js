@@ -2,7 +2,7 @@ const {
   getCurrentMatch,
   getAllPlayers,
   getLastFinishedMatch,
-  getCountOfMatches,
+  getCountOfFinishedMatches,
 } = require("./../core/db");
 const { isAdmin } = require("./../consts/admins");
 const messages = require("./../consts/messages");
@@ -68,7 +68,7 @@ const handleStats = (bot) => async (ctx, obj, fromObj, chatId) => {
 
   const userInfo = fromObj;
 
-  const countOfMatches = await getCountOfMatches();
+  const countOfMatches = await getCountOfFinishedMatches();
   const players = await getAllPlayers();
 
   let postText = `🏆 *Рейтинг игроков, всего матчей: ${countOfMatches} *\n\n`;

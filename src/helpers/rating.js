@@ -6,28 +6,31 @@ function normalizeUserListWithRating(data) {
   const userInfo = {};
 
   Object.values(data).forEach((game) => {
-    const { players, teamScoreA, teamScoreB } = game;
+    const { players, teamScoreA, teamScoreB, status } = game;
 
     // Определяем рейтинг команды
-    const teamRatings = {
-      a: teamScoreA > teamScoreB ? 3 : teamScoreA < teamScoreB ? 0 : 1,
-      b: teamScoreB > teamScoreA ? 3 : teamScoreB < teamScoreA ? 0 : 1,
-    };
 
-    players.forEach((player) => {
-      const { telegramId, fullName, team } = player;
+    if (status === "finished") {
+      const teamRatings = {
+        a: teamScoreA > teamScoreB ? 3 : teamScoreA < teamScoreB ? 0 : 1,
+        b: teamScoreB > teamScoreA ? 3 : teamScoreB < teamScoreA ? 0 : 1,
+      };
 
-      if (!userInfo[telegramId]) {
-        userInfo[telegramId] = {
-          telegramId,
-          fullName,
-          rating: 0,
-        };
-      }
+      players.forEach((player) => {
+        const { telegramId, fullName, team } = player;
 
-      // Суммируем рейтинг игрока за все игры
-      userInfo[telegramId].rating += teamRatings[team];
-    });
+        if (!userInfo[telegramId]) {
+          userInfo[telegramId] = {
+            telegramId,
+            fullName,
+            rating: 0,
+          };
+        }
+
+        // Суммируем рейтинг игрока за все игры
+        userInfo[telegramId].rating += teamRatings[team];
+      });
+    }
   });
 
   // Возвращаем отсортированный список пользователей

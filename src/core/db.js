@@ -83,10 +83,12 @@ module.exports.deletePlayerToMatch = async (obj, matchId) => {
   return "Вы покинули матч";
 };
 
-module.exports.getCountOfMatches = async () => {
+module.exports.getCountOfFinishedMatches = async () => {
   const data = await readFile(matchesFileName);
 
-  const matchCount = Object.values(data)?.length || 0;
+  const matchCount =
+    Object.values(data).filter((match) => match.status === "finished")
+      ?.length || 0;
 
   return matchCount;
 };
