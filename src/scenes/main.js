@@ -7,6 +7,7 @@ const {
   handleStats,
   handleStart,
   handleCurrentMatch,
+  handleLastMatch,
 } = require("./../handles/user");
 const {
   handleNewMatch,
@@ -44,6 +45,10 @@ const actionsWithCommands = [
   {
     command: "current",
     action: handleCurrentMatch,
+  },
+  {
+    command: "last",
+    action: handleLastMatch,
   },
   {
     command: "start",

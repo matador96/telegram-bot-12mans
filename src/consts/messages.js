@@ -36,6 +36,7 @@ module.exports = {
   help: `
 /start - Меню
 /current - Текущий матч
+/last - Последний матч
 /stats - Рейтинг игроков
 /help - Помощь
 

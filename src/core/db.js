@@ -93,10 +93,19 @@ module.exports.getCountOfMatches = async () => {
 
 module.exports.getCurrentMatch = async () => {
   const data = await readFile(matchesFileName);
-
   const match = Object.values(data).find((e) => e.status === "active");
-
   return match;
+};
+
+module.exports.getLastFinishedMatch = async () => {
+  const data = await readFile(matchesFileName);
+  const matches = Object.values(data);
+
+  const lastMatch = matches
+    .filter((match) => match.status === "finished")
+    .sort((a, b) => b.id - a.id)[0];
+
+  return lastMatch || null;
 };
 
 module.exports.updateMatch = async (id, obj) => {

@@ -1,11 +1,12 @@
 const {
   getCurrentMatch,
   getAllPlayers,
+  getLastFinishedMatch,
   getCountOfMatches,
 } = require("./../core/db");
 const { isAdmin } = require("./../consts/admins");
 const messages = require("./../consts/messages");
-const { createMatchMessage } = require("./main");
+const { createMatchMessage, createMatchPendingMessage } = require("./main");
 const { closeCtx } = require("./../helpers/main");
 
 const HelpButton = { text: "❓ Помощь", callback_data: "help" };
@@ -13,6 +14,11 @@ const StatsButton = { text: "📊 Статистика игроков", callback
 const CurrentMatchButton = {
   text: "⚽️ Текущий матч",
   callback_data: "current",
+};
+
+const LastMatchButton = {
+  text: "⚽️ Последний матч",
+  callback_data: "last",
 };
 
 const isPrivate = (bot, ctx, obj) => {
@@ -93,7 +99,12 @@ ID канала ${chatId}`,
     {
       parse_mode: "html",
       reply_markup: {
-        inline_keyboard: [[CurrentMatchButton], [StatsButton], [HelpButton]],
+        inline_keyboard: [
+          [CurrentMatchButton],
+          [LastMatchButton],
+          [StatsButton],
+          [HelpButton],
+        ],
       },
     }
   );
@@ -129,10 +140,41 @@ const handleCurrentMatch =
     await createMatchMessage(ctx, currentMatch.id);
   };
 
+const handleLastMatch =
+  (bot) => async (ctx, obj, fromObj, chatId, messageType) => {
+    if (isPrivate(bot, ctx, obj)) {
+      return;
+    }
+
+    const match = await getLastFinishedMatch();
+    const userInfo = fromObj;
+
+    if (!match) {
+      if (messageType === "text") {
+        await bot.telegram.sendMessage(
+          chatId,
+          `[${
+            userInfo?.first_name || userInfo?.last_name || userInfo?.id
+          }](tg://user?id=${userInfo.id}), сейчас нет завершенных матчей`,
+          {
+            parse_mode: "markdown",
+          }
+        );
+      } else {
+        await closeCtx(ctx, "Нет завершенных матчей", false);
+      }
+
+      return;
+    }
+
+    await createMatchPendingMessage(ctx, match.id);
+  };
+
 module.exports = {
   handleHelp,
   handleStats,
   handleStart,
   isPrivate,
   handleCurrentMatch,
+  handleLastMatch,
 };
