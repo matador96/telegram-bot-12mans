@@ -15,15 +15,14 @@ const getRandomTeam = () => {
 };
 
 function dividePlayers(players) {
-  // Проверяем, что количество игроков чётное
-  if (players.length % 2 !== 0) {
-    throw new Error(
-      "Игроков должно быть четное количество для равного разделения."
-    );
-  }
-
   // Сортируем игроков по рейтингу в порядке убывания
   players.sort((a, b) => b.rating - a.rating);
+
+  // Если количество игроков нечетное, находим игрока с наименьшим рейтингом
+  let extraPlayer = null;
+  if (players.length % 2 !== 0) {
+    extraPlayer = players.pop();
+  }
 
   // Инициализация команд
   const teamA = [];
@@ -31,13 +30,9 @@ function dividePlayers(players) {
   let totalRatingA = 0;
   let totalRatingB = 0;
 
-  // Распределение игроков
-  players.forEach((player) => {
-    // Добавляем игрока в команду с меньшим общим рейтингом
-    if (
-      (teamA.length < players.length / 2 && totalRatingA <= totalRatingB) ||
-      teamB.length === players.length / 2
-    ) {
+  // Распределение игроков по принципу "змейки"
+  players.forEach((player, index) => {
+    if (index % 2 === 0) {
       teamA.push(player.telegramId);
       totalRatingA += player.rating;
     } else {
@@ -46,6 +41,17 @@ function dividePlayers(players) {
     }
   });
 
+  // Добавляем лишнего игрока в команду с меньшим рейтингом
+  if (extraPlayer) {
+    if (totalRatingA <= totalRatingB) {
+      teamA.push(extraPlayer.telegramId);
+      totalRatingA += extraPlayer.rating;
+    } else {
+      teamB.push(extraPlayer.telegramId);
+      totalRatingB += extraPlayer.rating;
+    }
+  }
+
   return { teamA, teamB };
 }
 
@@ -53,8 +59,6 @@ cron.schedule("*/5 * * * * *", async () => {
   const activeMatch = await getActiveMatch();
 
   if (!activeMatch) return;
-
-  if (activeMatch.players.length !== activeMatch.playerCount) return;
 
   if (!isWithinOneHour(activeMatch.date, activeMatch.time)) return;
 
