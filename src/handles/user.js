@@ -75,29 +75,29 @@ const handleStats = (bot) => async (ctx, obj, fromObj, chatId) => {
   const players = await getAllPlayers();
 
   let postText = `🏆 *Рейтинг игроков, всего матчей: ${countOfMatches} *\n
-    Игрок | Очков / Побед
+    Игрок | Очков / Побед / Матчей / Винрейт
     ------------------------------------\n`;
 
   players.forEach((user, index) => {
-    if (user?.rating > 0) {
-      let emoji = "";
+    let emoji = "";
 
-      if (index === 0) {
-        emoji = "🥇";
-      }
-
-      if (index === 1) {
-        emoji = "🥈";
-      }
-
-      if (index === 2) {
-        emoji = "🥉";
-      }
-
-      postText += `${index + 1}. ${emoji} ${user?.fullName} ( ${
-        user?.rating || 0
-      } / ${user.winCount || 0} ) \n`;
+    if (index === 0) {
+      emoji = "🥇";
     }
+
+    if (index === 1) {
+      emoji = "🥈";
+    }
+
+    if (index === 2) {
+      emoji = "🥉";
+    }
+
+    postText += `${index + 1}. ${emoji} ${user?.fullName} | ${
+      user?.rating || 0
+    } / ${user.winCount || 0} / ${user.matchCount || 0} / ${
+      user.winRate ? `${user.winRate}%` : `0%`
+    } \n`;
   });
 
   postText += `\n🎮 Статистику запросил: [${

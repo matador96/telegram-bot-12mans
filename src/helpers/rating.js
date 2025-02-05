@@ -22,16 +22,24 @@ function normalizeUserListWithRating(data) {
             telegramId,
             fullName,
             rating: 0,
+            matchCount: 0,
             winCount: 0, // Счетчик побед
           };
         }
 
         userInfo[telegramId].rating += teamRatings[team];
+        userInfo[telegramId].matchCount += 1;
 
-        // Увеличиваем счетчик побед, если команда игрока выиграла
         if (teamRatings[team] === 3) {
           userInfo[telegramId].winCount += 1;
         }
+
+        userInfo[telegramId].winRate = Math.round(
+          (userInfo[telegramId].winCount / userInfo[telegramId].matchCount) *
+            100
+        );
+
+        // Увеличиваем счетчик побед, если команда игрока выиграла
       });
     }
   });
